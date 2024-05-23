@@ -37,4 +37,13 @@ class FlutterNfcHce {
   Future<bool> isNfcEnabled() async {
     return await FlutterNfcHcePlatform.instance.isNfcEnabled() == 'true';
   }
+
+  Future<bool> isNfcSupport() async {
+    return await FlutterNfcHcePlatform.instance.isNfcSupport() == 'true';
+  }
+
+  Future<String?> enableApduService(
+      bool enable) {
+    return FlutterNfcHcePlatform.instance.enableApduService(enable);
+  }
 }

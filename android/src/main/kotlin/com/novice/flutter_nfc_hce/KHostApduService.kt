@@ -141,10 +141,10 @@ class KHostApduService : HostApduService() {
 //                Log.i("onStartCommand()", "readNdefMessageFromFile() != ndefMessage ->ndefMessage: " + content +", file message: " + readNdefMessageFromFile(this))
 //            }
 
-           if(persistMessage){
+            if(persistMessage){
                 Log.i("onStartCommand()", "persistMessage == true -> writeNdefMessageToFile call, content: " + content)
                 writeNdefMessageToFile(this, content)
-           }
+            }
 
             NDEF_URI = NdefMessage(createNdefRecord(content, mimeType, NDEF_ID))
 
@@ -167,6 +167,14 @@ class KHostApduService : HostApduService() {
         // in the NFC Forum specification
         //
         Log.i(TAG, "processCommandApdu() | incoming commandApdu: " + commandApdu.toHex())
+
+        //
+        // Command APDU of less than 5 bytes
+        //
+        if (commandApdu.size < 5) {
+            Log.i(TAG, "Received incomplete command APDU. Our Response: " + A_ERROR.toHex());
+            return A_ERROR;
+        }
 
         //
         // First command: NDEF Tag Application select (Section 5.5.2 in NFC Forum spec)
@@ -295,14 +303,40 @@ class KHostApduService : HostApduService() {
     private fun createNdefRecord(content: String, mimeType: String, id: ByteArray): NdefRecord {
         Log.i(TAG, "createNdefRecord(): $content")
 
-        if(mimeType == "text/plain") {
+        if (mimeType == "text/plain") {
             return createTextRecord("en", content, id);
+        } else if(mimeType == "RTD_URI") {
+            return createUriRecord("en", content, id);
         }
 
         val type = mimeType.toByteArray(charset("US-ASCII"))
         val payload = content.toByteArray(charset("UTF-8"))
 
         return NdefRecord(NdefRecord.TNF_MIME_MEDIA, type, id, payload)
+    }
+
+    private fun createUriRecord(language: String, text: String, id: ByteArray): NdefRecord {
+        val languageBytes: ByteArray
+        val textBytes: ByteArray
+        try {
+            languageBytes = language.toByteArray(charset("US-ASCII"))
+            textBytes = text.toByteArray(charset("UTF-8"))
+        } catch (e: UnsupportedEncodingException) {
+            throw AssertionError(e)
+        }
+
+        val recordPayload = ByteArray(1 + textBytes.size)
+
+        recordPayload[0] = (languageBytes.size and 0x03F).toByte()
+        System.arraycopy(
+            textBytes,
+            0,
+            recordPayload,
+            1 ,
+            textBytes.size,
+        )
+
+        return NdefRecord(NdefRecord.TNF_WELL_KNOWN, NdefRecord.RTD_URI, id, recordPayload)
     }
 
     private fun createTextRecord(language: String, text: String, id: ByteArray): NdefRecord {

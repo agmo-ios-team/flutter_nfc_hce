@@ -1,6 +1,7 @@
 package com.novice.flutter_nfc_hce
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.nfc.NfcAdapter
@@ -70,6 +71,18 @@ class FlutterNfcHcePlugin: FlutterPlugin, MethodCallHandler, ActivityAware  {
                     result.success("false")
                 }
             }
+            "isNfcSupport" -> {
+                if (isNfcSupport()) {
+                    result.success("true")
+                } else {
+                    result.success("false")
+                }
+            }
+            "enableApduService" -> {
+                val enable = call.argument<Boolean>("enable") ?: false
+                enableApduService(enable)
+                result.success("success")
+            }
             else -> {
                 result.notImplemented()
             }
@@ -131,5 +144,25 @@ class FlutterNfcHcePlugin: FlutterPlugin, MethodCallHandler, ActivityAware  {
 
     private fun isNfcEnabled(): Boolean {
         return mNfcAdapter?.isEnabled == true
+    }
+
+    private fun isNfcSupport(): Boolean {
+        return mNfcAdapter != null
+    }
+
+    private fun enableApduService(enable: Boolean) {
+        val pm = activity?.packageManager
+        val state = if (enable) {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        } else {
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        }
+        activity?.applicationContext?.let {
+            pm?.setComponentEnabledSetting(
+                ComponentName(it, "com.novice.flutter_nfc_hce.KHostApduService"),
+                state,
+                PackageManager.DONT_KILL_APP
+            )
+        }
     }
 }
