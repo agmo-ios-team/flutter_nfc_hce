@@ -49,4 +49,18 @@ class MethodChannelFlutterNfcHce extends FlutterNfcHcePlatform {
   Future<String?> isNfcEnabled() async {
     return await methodChannel.invokeMethod<String>('isNfcEnabled');
   }
+
+  @override
+  Future<String?> isNfcSupport() async {
+    return await methodChannel.invokeMethod<String>('isNfcSupport');
+  }
+
+  @override
+  Future<String?> enableApduService(bool enable) async {
+    return await methodChannel.invokeMethod<String>(
+      'enableApduService',
+      <String, dynamic>{
+        'enable': enable,
+      },);
+  }
 }
