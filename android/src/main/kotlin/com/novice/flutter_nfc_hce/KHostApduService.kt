@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.util.Log
 import java.io.*
 import java.math.BigInteger
+import java.nio.charset.Charset
 
 class KHostApduService : HostApduService() {
 
@@ -316,27 +317,16 @@ class KHostApduService : HostApduService() {
     }
 
     private fun createUriRecord(language: String, text: String, id: ByteArray): NdefRecord {
-        val languageBytes: ByteArray
-        val textBytes: ByteArray
-        try {
-            languageBytes = language.toByteArray(charset("US-ASCII"))
-            textBytes = text.toByteArray(charset("UTF-8"))
-        } catch (e: UnsupportedEncodingException) {
-            throw AssertionError(e)
+        val uriRecord = ByteArray(0).let { emptyByteArray ->
+            NdefRecord(
+                NdefRecord.TNF_ABSOLUTE_URI,
+                text.toByteArray(Charset.forName("US-ASCII")),
+                emptyByteArray,
+                emptyByteArray
+            )
         }
 
-        val recordPayload = ByteArray(1 + textBytes.size)
-
-        recordPayload[0] = (languageBytes.size and 0x03F).toByte()
-        System.arraycopy(
-            textBytes,
-            0,
-            recordPayload,
-            1 ,
-            textBytes.size,
-        )
-
-        return NdefRecord(NdefRecord.TNF_WELL_KNOWN, NdefRecord.RTD_URI, id, recordPayload)
+        return uriRecord
     }
 
     private fun createTextRecord(language: String, text: String, id: ByteArray): NdefRecord {
